@@ -261,7 +261,12 @@
 
 (prn (demo.string-utils/zombify "i want brains"))
 
+(defprotocol Animal
+  (can-eat [this food]))
 
+(defrecord Koala []
+  Animal
+  (can-eat [this food] (= food "eucalyptus")))
 
 (defn eat [animal & foods]
   (doseq [food foods]
@@ -270,9 +275,15 @@
                 "Can't eat ")
               food))))
 
-(let [animal {:legs 4
-              :color "brown"}]
+(let [animal (assoc (Koala.)
+               :legs 4
+               :color "blown")]
   (prn animal)
   (prn (eat animal "insects" "curry" "eucalyptus")))
+
+(require 'caterpillar)
+
+(caterpillar/crawl)
+(caterpillar/eat)
 
 (shutdown-agents)
