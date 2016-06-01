@@ -288,26 +288,21 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
 
 ## ネストされたデータ構造
 
+前述のとおり、Clojureのデータ構造は任意の型を格納できるため、そのままネストできます。
+
+ネストされたデータ構造からデータを取り出すときに楽に記述する方法は  
+「データ構造から情報を取り出す」で述べます。
+
 ```clj
 (let [inner [:Earth :Moon]
       outer [:Sun :Mercury :Venus inner :Mars]]
-  (println outer)
-  (println (outer 3))
-  (println ((outer 3) 1)))
-
-(let [colour "Indigo"]
-  (prn colour))
-
-(let [colours ["Red" "Orange" "Yellow" "Green" "Blue"]]
-  (prn (colours 0)))
-
-(let [atomic-weights {:Hydrogen 1.008
-                      :Helium 4.003
-                      :Manganese 54.94}]
-  (prn (atomic-weights :Helium)))
+  (println (outer 3))      ; [:Earth :Moon]
+  (println ((outer 3) 1))) ; :Moon
 ```
 
 ### データ構造を宣言する
+
+複雑なデータ構造を作るためには、以下のようにネストされたデータ構造に1つ1つ名前を付けるか、
 
 ```clj
 (let [owner1 {:name "Santa Claus"
@@ -319,7 +314,12 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
                :opened "2000-01-01"
                :owners owners}]
   (println account))
+```
 
+以下のようにデータ構造を直接入れ子にして書きます。  
+同じデータ構造を異なる箇所から使わない場合は、こちらの書き方が一般的です。
+
+```clj
 (let [account {:number "12345678"
                :opened "2000-01-01"
                :owners [{:name "Santa Claus"
@@ -331,6 +331,9 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
 
 ### データ構造から情報を取り出す
 
+ネストされたデータ構造から値を取り出すときに、関数呼び出しのようにアクセスすると括弧の数がすごいことになります。  
+`get-in` を使うと、ネストしたデータ構造へのアクセスがシンプルに書けます。
+
 ```clj
 (let [account {:number "12345678"
                :opened "2000-01-01"
@@ -338,28 +341,24 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
                          :DOB "1882-12-25"}
                         {:name "Mickey Mouse"
                          :DOB "1928-11-18"}]}]
-  (println (account :owners))
-  (println ((account :owners) 0))
-  (println (((account :owners) 0) :DOB))
-  (println (get-in account [:owners 0 :DOB]))
-  (println (str "Account #" (account :number)))
-  (println (str "Opened on " (account :opened)))
-  (println "Joint owners:")
-  (println (str "\t"
-                (get-in account [:owners 0 :name])
-                " (born "
-                (get-in account [:owners 0 :DOB])
-                ")"))
-  (println (str "\t"
-                (get-in account [:owners 1 :name])
-                " (born "
-                (get-in account [:owners 1 :DOB])
-                ")")))
+  (println (((account :owners) 0) :DOB))       ; 1882-12-25
+  (println (get-in account [:owners 0 :DOB])   ; 1882-12-25
+  (println (((account :owners) 1) :name))      ; Mickey Mouse
+  (println (get-in account [:owners 1 :name])) ; Mickey Mouse
 ```
 
 ## 条件
 
 ### if / when
+
+条件分岐には `if` 式を使います。  
+`(if 判別式 真のとき 偽のとき)`  
+で、判別式によって評価される式を変えることができます。
+
+これの派生に `when` 式があります。  
+`(when 判別式 真のとき(結果は捨てる) ... 真のとき)`  
+こちらは、「偽のとき」がなくて、真の時に複数の式を評価するときに使います。  
+最後の式以外の結果は捨てられます。
 
 ```clj
 (let [word "antidisestablishmentarianism"
@@ -371,7 +370,8 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
       (println (str "'" word "' is a short word"))))
   (when (>= strlen 20) (println (str "'" word "' is actually enormous"))))
 ```
-### if not / when-not
+
+Perlの `unless` に相当する組込オペレータはありませんが、 `when` の逆の `when-not` はあります。
 
 ```clj
 (let [temperature 20]
@@ -385,7 +385,13 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
     (println "Oh no it's too cold")))
 ```
 
+Perlの後置 `if` に相当する構文はありません。  
+全てのオペレータが前置なのであったらおかしいですね。
+
 ### if式 / cond式
+
+`if` 式は評価した結果を返します。  
+これは、三項演算子のように使えることを意味します。
 
 ```clj
 (let [gain 48]
@@ -393,16 +399,28 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
 
 (let [lost 1]
   (println (str "You lost " lost " t" (if (= lost 1) "oo" "ee") "th!")))
+```
 
+`if` 式はネストする読み難いので、 `cond` 式を使います。  
+
+```
 (let [eggs 5]
   (println (str "You hove " (cond (= eggs 0) "no eggs"
                                   (= eggs 1) "an egg"
                                   :default "some eggs"))))
 ```
 
+`cond` 式の最後の `:default` は真に評価される値ならなんでもいいです。
+
 ## ループ
 
 ### dotimes / doseq
+
+単純なループには `dotimes`、`doseq` を使います。
+`dotimes` は指定した回数だけ繰り返します。
+ループの内側では0から始まるカウンター変数が見えます。
+
+`doseq` はコレクションの各要素を取り出して要素数だけ繰り返します。
 
 ```clj
 (let [v ["print"
@@ -419,7 +437,14 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
     (println (str i ": " s)))
   (doseq [i (range (count v))]
     (println (str i ": " (v i)))))
+```
 
+マップの要素でループするには `keys` や `vals` を使ってキーのシーケンス、
+値のシーケンスを取り出してもいいですが、ループ変数を `[k v]` とすることでその両方が見えるようになります。
+
+キーをソートしながら繰り返したい等の場合には `keys` を使う必要があります。
+
+```clj
 (let [scientists {:Newton "Isaac"
                   :Einstein "Albert"
                   :Darwin "Charles"}]
@@ -430,10 +455,12 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
   (doseq [[k v] scientists]
     (println (str k ": " v))))
 ```
+
 ### loop / recur
 
-```clj
+ループ条件が複雑な場合は `loop` と `recur` を使います。  
 
+```clj
 (loop [candidate 2
        divisor 2]
   (cond
@@ -443,7 +470,15 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
                                         (recur (inc candidate) 2))
     (zero? (mod candidate divisor)) (recur (inc candidate) 2)
     :default (recur candidate (inc divisor))))
+```
 
+考えかたは関数を使った再帰に近いです。 `loop` の内側からだけ見える `recur` という関数があり、
+更新された引数を渡しながら再帰するイメージです。
+
+基本的に、繰り返しながらファイルに出力したりする用途以外には使われません。  
+上記の例も、後述するシーケンス関数を使って以下のように書くことができ、こちらのほうが推奨されます。
+
+```clj
 (letfn [(prime? [n] (empty? (filter #(zero? (mod n %))
                                     (range 2 (Math/sqrt n)))))]
   (doseq [i (filter prime? (range 2 100))]
@@ -452,48 +487,135 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
 
 ## シーケンス関数
 
+Clojureの
+
+- リスト
+- ベクタ
+- マップ
+- セット
+
+に共通して使える関数群がシーケンス関数です。
+これらに限らず、Clojureでは引数に渡した値を書き換えることができません。  
+なので、Perlの同じ名前の組込関数と挙動が異なります。
+
+- `first` - 先頭の要素を返します
+- `rest` - 先頭を除いた残りの要素を返します
+- `peek` - 末尾の要素を返します
+- `pop` - 末尾の要素を除いた残りの要素を返します
+- `conj` - 要素を追加した新しいシーケンスを返します
+- `cons` - 先頭に要素を追加した新しいシーケンスを返します
+
 ```clj
 (let [stack ["Fred" "Eileen" "Denise" "Charlie"]]
-  (println (pop stack))
-  (println (peek stack))
+  (println (first stack))
   (println (rest stack))
+  (println (peek stack))
+  (println (pop stack))
   (println (conj stack "Bob" "Alice"))
   (println (cons "Hank" (cons "Grace" stack))))
+```
 
+`cons` と `conj` の引数の順番が異なることに注意。
+
+ベクタに格納された複数の文字列を、 `,` で区切った1つの文字列に変換してみます。  
+`interpose` は各要素の間に特定の要素を挟んだシーケンスを返します。  
+文字列が格納されたシーケンスをまとめて1つの文字列にするには `apply str` を使います。
+
+```clj
 (let [elements ["Antimony" "Arsenic" "Alminum" "Selenium"]]
   (println elements)
   (println (str elements))
   (println (interpose ", " elements))
-  (println (apply str (interpose ", " elements)))
-  (println (clojure.string/join ", " elements)))
-
-(require '[clojure.string :as str])
-
-(let [capitals ["Baton Rouge" "Indianapolis" "Columbus" "Montgomery" "Helena" "Denver" "Boise"]]
-  (println (str/join ", " (map #(str/upper-case %) capitals)))
-  (println (str/join ", " (map str/upper-case capitals))))
-
-(let [capitals ["Baton Rouge" "Indianapolis" "Columbus" "Montgomery" "Helena" "Denver" "Boise"]]
-  (println (str/join ", " (filter #(= (count %) 6) capitals))))
-
-(let [capitals #{"Baton Rouge" "Indianapolis" "Columbus" "Montgomery" "Helena" "Denver" "Boise"}]
-  (println (capitals "Columbus")))
-
-(let [elevations [19 1 2 100 3 98 100 1056]]
-  (println (str/join ", " (sort elevations)))
-  (println (str/join ", " (sort (map str elevations)))))
+  (println (apply str (interpose ", " elements))))
 ```
 
+上記は頻繁に使われる変換なので、 `clojure.string` ライブラリに関数として定義されています。  
+`clojure.string/join` です。
+
+```clj
+(let [elements ["Antimony" "Arsenic" "Alminum" "Selenium"]]
+  (println (clojure.string/join ", " elements))
+```
+
+毎回 `clojure.string` と書くのが面倒なので、以下のように別名を付けることができます。
+
+```clj
+(require '[clojure.string :as str])
+```
+
+`map` 関数はシーケンスの各要素に関数を適用した結果のシーケンスを返します。  
+`map` 関数は関数オブジェクトを引数に取る関数です。
+関数オブジェクトを得るためには3つの方法があります。
+
+- 関数に名前が付いている場合はその名前
+- `(fn [引数] 定義)` で無名関数を作る
+- `#(定義)` で無名関数を作る
+
+`#(定義)` は `(fn [引数] 定義)` の略記法です。  
+最初の引数は `%` もしくは `%1` という名前が付けられます。  
+以下、引数が増えると `%2`、`%3` と名前が付けられていきます。
+
+```clj
+(let [capitals ["Baton Rouge" "Indianapolis" "Columbus" "Montgomery" "Helena" "Denver" "Boise"]]
+  (println (str/join ", " (map (fn [s] (str/upper-case s)) capitals)))
+  (println (str/join ", " (map #(str/upper-case %) capitals)))
+  (println (str/join ", " (map str/upper-case capitals))))
+;; BATON ROUGE, INDIANAPOLIS, COLUMBUS, MONTGOMERY, HELENA, DENVER, BOISE
+```
+
+`filter` 関数はシーケンスから条件に一致する要素だけを含むシーケンスを返す関数です。
+
+```clj
+(let [capitals ["Baton Rouge" "Indianapolis" "Columbus" "Montgomery" "Helena" "Denver" "Boise"]]
+  (println (str/join ", " (filter #(= (count %) 6) capitals)))) ; Helena, Denver
+```
+
+以下のように `filter` を使ってシーケンスに特定よ要素が含まれていることを確かめることができますが、
+
+```clj
+(let [capitals ["Baton Rouge" "Indianapolis" "Columbus" "Montgomery" "Helena" "Denver" "Boise"]]
+  (println (empty? (filter #(= % "Columbus") capitals))))
+```
+
+このような状況ではセットを使うことが推奨されます。
+
+```clj
+(let [capitals #{"Baton Rouge" "Indianapolis" "Columbus" "Montgomery" "Helena" "Denver" "Boise"}]
+  (println (capitals "Columbus")))
+```
+
+`sort` 関数はソートされたシーケンスを返します。  
+デフォルトのソート順は要素の型によって決まります。
+
+```clj
+(let [elevations [19 1 2 100 3 98 100 1056]]
+  (println (str/join ", " (sort elevations)))            ; 1, 2, 3, 19, 98, 100, 100, 1056
+  (println (str/join ", " (sort (map str elevations))))) ; 1, 100, 100, 1056, 19, 2, 3, 98
+```
+
+ちなみに異なる型が混ざったりしていると例外を投げます。
+
+1引数目に「2引数で-1/0/1を返す関数」を取ることで、任意のソート順でソートすることができます。
+
 ## ユーザー定義の関数
+
+名前付き関数を定義するには `defn` を使います。
+構文は  
+`(defn 名前 [引数] 定義)`  
+です。 
+
+関数は最後に評価した値を返します。
 
 ```clj
 (defn hyphenate [word]
   (str/join "-" word))
 
-(hyphenate "exterminate")
+(hyphenate "exterminate") ; e-x-t-e-r-m-i-n-a-t-e
 ```
 
 ### 引数を取り出す
+
+以下のように引数に1つ1つに名前を付ける方法と、
 
 ```clj
 (defn left-pad [old-string width pad-char]
@@ -501,6 +623,22 @@ Clojureでは、関数は `()` の先頭にあるときと、先頭以外にあ�
        old-string))
 
 (left-pad "hello" 10 "+")
+```
+
+`[& args]` のように可変長引数を取るための構文があります。
+
+```clj
+(defn left-pad [& args]
+  (let [old-string (first args)
+        width      (first (rest args))
+        pad-char   (first (rest (rest args)))]
+    (str (str/join (repeat (- width (count old-string)) pad-char))
+         old-string)))
+
+(left-pad "hello" 10 "+")
+```
+
+```clj
 (defn left-pad [{old-string :old-string
                  width :width
                  pad-char :pad-char}]
