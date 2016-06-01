@@ -15,6 +15,8 @@
   (prn (str s1 s2))
   (prn (= s1 s2)))
 
+(prn (= 2 "2"))
+
 (let [lst (list "print"
                 "these"
                 "strings"
@@ -37,6 +39,16 @@
   (prn (last (butlast (butlast (butlast (butlast (butlast (butlast lst))))))))
   (prn (nth lst 3))
   (prn (count lst)))
+
+
+(let [lst (list "hoge" "fuga" "piyo")]
+  (println lst) ; (hoge fuga piyo)
+  (println (first lst)) ; hoge
+  (println (first (rest lst))) ; fuga
+  (println (last lst)) ; piyo
+  (println (last (butlast lst))) ; fuga
+  (println (nth lst 1)) ; fuga
+  (println (count lst))) ; 3
 
 (let [v ["print"
          "these"
@@ -66,6 +78,15 @@
   (prn (outer 3))
   (prn ((outer 3) 1)))
 
+(let [colour "Indigo"
+      colours ["Red" "Orange" "Yellow" "Green" "Blue"]]
+  (prn (colours 0)))
+
+(let [atomic-weights {:Hydrogen 1.008
+                      :Helium 4.003
+                      :Manganese 54.94}]
+  (prn (atomic-weights :Helium)))
+
 (let [owner1 {:name "Santa Claus"
              :DOB "1882-12-25"}
       owner2 {:name "Mickey Mouse"
@@ -87,7 +108,6 @@
   (prn ((account :owners) 0))
   (prn (((account :owners) 0) :DOB))
   (prn (get-in account [:owners 0 :DOB]))
-  (prn)
   (prn (str "Account #" (account :number)))
   (prn (str "Opened on " (account :opened)))
   (prn "Joint owners:")
@@ -166,6 +186,11 @@
                                         (recur (inc candidate) 2))
     (zero? (mod candidate divisor)) (recur (inc candidate) 2)
     :default (recur candidate (inc divisor))))
+
+(letfn [(prime? [n] (empty? (filter #(zero? (mod n %))
+                                    (range 2 (Math/sqrt n)))))]
+  (doseq [i (filter prime? (range 2 100))]
+    (prn (str i " is prime"))))
 
 (let [stack ["Fred" "Eileen" "Denise" "Charlie"]]
   (prn (pop stack))
@@ -277,7 +302,7 @@
 
 (let [animal (assoc (Koala.)
                :legs 4
-               :color "blown")]
+               :colour "blown")]
   (prn animal)
   (prn (eat animal "insects" "curry" "eucalyptus")))
 
@@ -287,3 +312,5 @@
 (caterpillar/eat)
 
 (shutdown-agents)
+
+((partial + 3) 2)

@@ -1,0 +1,1 @@
+@java -cp "clojure-1.8.0.jar;." clojure.main %1 %2 %3 %4 %5 %6 %7 %8 %9
