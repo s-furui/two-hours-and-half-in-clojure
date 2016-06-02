@@ -328,3 +328,9 @@
 (defmethod fizzbuzz [true  false] [n] "Fizz")
 (defmethod fizzbuzz [false true]  [n] "Buzz")
 (defmethod fizzbuzz [false false] [n] n)
+
+(conj {:Einstein "Albert"} [:Newton "Isaac"])
+
+(conj #{:a :b :c} :d)
+
+(reduce * (range 1 (inc 10)))

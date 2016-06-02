@@ -15,13 +15,11 @@ Clojureスクリプトは `.clj` もしくは `cljc` という拡張子のテキ
 (println "Hello world")
 ```
 
-ClojureはJavaで実装されている
-
 公式ウェブページ
 https://clojure.org/
 から現行バージョンであるclojure-1.8.0.zipをダウンロードし、解凍してclojure-1.8.0.jarを取り出します。
 
-以下のコマンドでスクリプトを実行できます。
+以下のコマンドでスクリプトを実行できます。Javaがインストールされている必要があります。
 
 ```
 java -cp "clojure-1.8.0.jar;." clojure.main helloworld.clj
@@ -42,7 +40,8 @@ clojure helloworld.clj
 
 Clojureでは全てのオペレータは `(オペレータ 引数1 引数2 引数3 ...)` の形式で書かれます。  
 ステートメントの区切りの `;` や 引数の区切りの `,` は必要ありません。  
-これは算術演算子でも例外ではありません。Perlでは
+
+これは算術演算子でも例外ではなく、Perlでは
 
 ```pl
 1 + 2
@@ -70,7 +69,7 @@ Clojureの変数には種類は無く、全て型の値を格納することが�
 
 ### リテラル
 
-Clojureで使えるプリミティブなデータ型には以下があります。
+Clojureには以下のようなデータ型があります。
 
 - nil - `nil` (Perlにおける `undef` 、Javaにおける `null`
 - 数値
@@ -140,7 +139,7 @@ Clojureでは演算子によって型が勝手に変わったりしません。
 ```clj
 (let [n 10
       s "20"]
-  (println (+ n s))) ; java.lang.ClassCastException: java.lang.String cannot be cast to java.lang.Number
+  (println (+ n s))) ; String cannot be cast to Number
 ```
 
 数値と文字列の比較も当然のように偽を返します。
@@ -225,8 +224,16 @@ Clojureでは、(リスト以外の)データ構造から要素を取り出す�
 
 ```clj
 (let [v ["print" "these" "strings" "out" "for"  "me"]]
-  (println (get v 5)) ; print
-  (println (get v 6)) ; nil
+  (println (get v 5))  ; print
+  (println (get v 6))) ; nil
+```
+
+ベクタに要素を追加することはできません。  
+`conj` を使うと要素が追加された新しいベクタを作ることができます。
+
+```clj
+(let [v [:a :b :c]]
+  (println (conj v :d))) ; [:a :b :c :d]
 ```
 
 #### マップ
@@ -256,6 +263,16 @@ Perlのハッシュ、PHPの連想配列、Pythonの辞書に相当します。
   (println (h :Galilei))) ; nil
 ```
 
+マップに要素を追加することはできません。  
+`conj` を使うと要素が追加された新しいマップを作ることができます。
+
+```clj
+(let [m {:a 1
+         :b 2
+         :c 3}]
+  (println (conj m [:d 4]))) ; {:a 1, :b 2, :c 3, :d 4}
+```
+
 #### セット
 
 セットは順序と重複のないデータ構造です。
@@ -270,6 +287,14 @@ Perlでは1/0の値を持つハッシュを使って実現していましたが�
 (let [s #{:red :green :blue}]
   (println (s :red))     ; :red
   (println (s :orange))) ; nil
+```
+
+セットに要素を追加することはできません。  
+`conj` を使うと要素が追加された新しいセットを作ることができます。
+
+```clj
+(let [s #{:a :b :c}]
+  (println (conj s :d))) ; #{:a :c :b :d}
 ```
 
 ## コンテキスト
@@ -499,23 +524,15 @@ Clojureの
 なので、Perlの同じ名前の組込関数と挙動が異なります。
 
 - `first` - 先頭の要素を返します
-- `rest` - 先頭を除いた残りの要素を返します
-- `peek` - 末尾の要素を返します
-- `pop` - 末尾の要素を除いた残りの要素を返します
-- `conj` - 要素を追加した新しいシーケンスを返します
+- `rest` - 先頭を除いた残りのシーケンスを返します
 - `cons` - 先頭に要素を追加した新しいシーケンスを返します
 
 ```clj
 (let [stack ["Fred" "Eileen" "Denise" "Charlie"]]
   (println (first stack))
   (println (rest stack))
-  (println (peek stack))
-  (println (pop stack))
-  (println (conj stack "Bob" "Alice"))
   (println (cons "Hank" (cons "Grace" stack))))
 ```
-
-`cons` と `conj` の引数の順番が異なることに注意。
 
 ベクタに格納された複数の文字列を、 `,` で区切った1つの文字列に変換してみます。  
 `interpose` は各要素の間に特定の要素を挟んだシーケンスを返します。  
@@ -543,6 +560,8 @@ Clojureの
 (require '[clojure.string :as str])
 ```
 
+### map
+
 `map` 関数はシーケンスの各要素に関数を適用した結果のシーケンスを返します。  
 `map` 関数は関数オブジェクトを引数に取る関数です。
 関数オブジェクトを得るためには3つの方法があります。
@@ -562,6 +581,8 @@ Clojureの
   (println (str/join ", " (map str/upper-case capitals))))
 ;; BATON ROUGE, INDIANAPOLIS, COLUMBUS, MONTGOMERY, HELENA, DENVER, BOISE
 ```
+
+### filter
 
 `filter` 関数はシーケンスから条件に一致する要素だけを含むシーケンスを返す関数です。
 
@@ -584,6 +605,8 @@ Clojureの
   (println (capitals "Columbus")))
 ```
 
+### sort
+
 `sort` 関数はソートされたシーケンスを返します。  
 デフォルトのソート順は要素の型によって決まります。
 
@@ -596,6 +619,16 @@ Clojureの
 ちなみに異なる型が混ざったりしていると例外を投げます。
 
 1引数目に「2引数で-1/0/1を返す関数」を取ることで、任意のソート順でソートすることができます。
+
+### reduce
+
+`reduce` 関数はシーケンスの要素を順番に2項演算を適用した結果を返します。
+
+例えば、 `1` から `n + 1` までの整数を順番に掛けていけば `n!` が求められます。
+
+```clj
+(println (reduce * (range 1 (inc 10)))) ; 3628800
+```
 
 ## ユーザー定義の関数
 
