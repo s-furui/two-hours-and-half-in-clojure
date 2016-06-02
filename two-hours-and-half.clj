@@ -231,17 +231,17 @@
   (str (str/join (repeat (- width (count old-string)) pad-char))
        old-string))
 
-(left-pad "hello" 10 "+")
+(println (left-pad "hello" 10 "+"))
 
-(defn left-pad [{old-string :old-string
-                 width :width
-                 pad-char :pad-char}]
+(defn left-pad [& {old-string :old-string
+                   width :width
+                   pad-char :pad-char}]
   (str (str/join (repeat (- width (count old-string)) pad-char))
        old-string))
 
-(left-pad {:old-string "hello"
-           :width 10
-           :pad-char "+"})
+(println (left-pad :old-string "hello"
+                   :width 10
+                   :pad-char "+"))
 
 (require '[clojure.java.shell :refer [sh]])
 
@@ -289,8 +289,10 @@
 (defprotocol Animal
   (can-eat [this food]))
 
-(defrecord Koala []
-  Animal
+(defrecord Koala [])
+
+(extend-protocol Animal
+  Koala
   (can-eat [this food] (= food "eucalyptus")))
 
 (defn eat [animal & foods]
@@ -311,6 +313,18 @@
 (caterpillar/crawl)
 (caterpillar/eat)
 
+((partial + 3) 2)
+
+(defn args-type [& args]
+  (type args))
+
+(args-type :a :b :c)
+
 (shutdown-agents)
 
-((partial + 3) 2)
+(defmulti fizzbuzz (fn [n] [(zero? (mod n 3))
+                            (zero? (mod n 5))]))
+(defmethod fizzbuzz [true  true]  [n] "FizzBuzz")
+(defmethod fizzbuzz [true  false] [n] "Fizz")
+(defmethod fizzbuzz [false true]  [n] "Buzz")
+(defmethod fizzbuzz [false false] [n] n)

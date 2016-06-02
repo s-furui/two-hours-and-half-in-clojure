@@ -622,10 +622,11 @@ Clojureの
   (str (str/join (repeat (- width (count old-string)) pad-char))
        old-string))
 
-(left-pad "hello" 10 "+")
+(left-pad "hello" 10 "+") ; +++++hello
 ```
 
-`[& args]` のように可変長引数を取るための構文があります。
+`[& args]` のように可変長引数を取るための構文があります。  
+`args` には引数のシーケンスが入ります。
 
 ```clj
 (defn left-pad [& args]
@@ -635,71 +636,203 @@ Clojureの
     (str (str/join (repeat (- width (count old-string)) pad-char))
          old-string)))
 
-(left-pad "hello" 10 "+")
+(println (left-pad "hello" 10 "+")) ; +++++hello
 ```
 
+引数にマップと取る場合、特殊な構文を使うことができます。  
+マップリテラルのキーとバリューを逆転させたような記法を使うことで、  
+マップの要素を直接変数に格納するこがでます。
+
 ```clj
-(defn left-pad [{old-string :old-string
-                 width :width
-                 pad-char :pad-char}]
+(defn left-pad [& {old-string :old-string
+                   width :width
+                   pad-char :pad-char}]
   (str (str/join (repeat (- width (count old-string)) pad-char))
        old-string))
 
-(left-pad {:old-string "hello"
-           :width 10
-           :pad-char "+"})
+(left-pad :old-string "hello"
+          :width 10
+          :pad-char "+") ; +++++hello
 ```
 
+この仕組みは「デストラクチャリング」と呼ばれており、  
+ローカル変数を定義する `let` や `doseq` などでも同様に使えます。
+
 ## システムコール
+
+外部のプロセスを起動することが(一応)できます。  
+Javaのライブラリでできることに終始するのが推奨されます。  
+どうしても、というときにだけ使いましょう。
+
+たとえば以下のようなPerlスクリプトがあったのとして、これを実行したいとします。
+
+```pl
+# anotherscript.pl
+use strict;
+use warnings;
+
+print @ARGV;
+exit 37;
+```
+
+`clojure.java.shell/sh` を使います。  
+実行ファイルとコマンドライン引数を引数に渡すと別のスレッドで実行し、結果をマップで返します。
 
 ```clj
 (require '[clojure.java.shell :refer [sh]])
 
 (println (sh "perl" "anotherscript.pl" "foo" "bar" "baz"))
+;; {:exit 37, :out "foobarbaz", :err ""}
+
+(shutdown-agents)
 ```
 
+`(require '[clojure.java.shell :refer [sh]])` とすると、名前空間から特定の変数だけをインポートすることができます。
+
+`(shutdown-agents)` ですが、`clojure.java.shell/sh` が裏で使っている
+Agentと呼ばれるバックグラウンドプロセスを終了させる命令です。  
+これが無いと全てAgentがタイムアウトするまでメインプロセスが終了しないため、スクリプトの実行が終わっても1分程度Javaが終了しなくなります。
+
 ## ファイルとファイルリーダー
+
+ファイルの読み込みを行なうには `clojure.java.io/reader` を使います。
+
+以下のような内用の `text.txt` を用意してこれを読み込んでみます。
+
+```
+こんにちわ、世界
+ほげ
+ふが
+ぴよ
+```
+
+`clojure.java.io/reader` は
+`:encodeing` キーワードの後にエンコーディングを指定することができます。  
+
+- `"UTF-8"`
+- `"MS932"`
+
+等が指定できますが、入力であれば `"JISAutoDetect"` を指定すれば自動判別が可能です。
+
+`clojure.java.io/reader` は `java.io.Reader` 型のオブジェクトを返します。  
+以下の例では `line-seq` を使ってリーダーから列のシーケンスを得ています。
 
 ```clj
 (require '[clojure.java.io :as io])
 
 (with-open [r (io/reader "text.txt" :encoding "JISAutoDetect")]
   (println (line-seq r)))
+;; ("こんにちわ、世界" "ほげ" "ふが" "ぴよ")
 ```
+
+`clojure.java.io/reader` はファイル名の他にURL、ソケット等を引数に取ることができます。
 
 ### ファイルテスト
 
+Perlにはファイルやディレクトリの状態をチェックする演算子が存在しますが、  
+ClojureはJavaの機能を直接使うことで対応します。
+
+`clojure.java.io/file` は `Java.io.File` 型のオブジェクトを返します。  
+このオブジェクトのメソッドを呼ぶことでファイルの状態をチェックします。
+
+Javaオブジェクトのメソッドを呼ぶための構文は
+
 ```clj
-(.exists (io/file "C:" "Windows"))
-(.isFile (io/file "C:" "Windows"))
-(.isDirectory (io/file "C:" "Windows"))
+(.メソッド名 オブジェクト メソッドの引数 ...)
+```
+
+です。
+
+```clj
+(require '[clojure.java.io :as io])
+
+(.exists (io/file "C:" "Windows"))      ; true
+(.isFile (io/file "C:" "Windows"))      ; false
+(.isDirectory (io/file "C:" "Windows")) ; true
 ```
 
 ## 正規表現
 
+`#""` で囲むと正規表現パターンを作ることができます。  
+正規表現扱う関数は
+
+- `re-find`
+- `re-seq`
+- `clojure.string/replace`
+
+等があります。
+
+`re-find` は正規表現を探して結果をベクタにして返す関数です。
+ベクタの最初はマッチした全体、以降はグループ化した部分のマッチが格納されます。
+
 ```clj
 (let [s "Hello world"]
-  (println (re-find #"(\w+)\s+(\w+)" s)))
+  (prn (re-find #"(\w+)\s+(\w+)" s)))
+;; ["Hello world" "Hello" "world"]
+
+(require '[clojure.string :as str])
 
 (let [s "colourless green ideas sleep furiously"]
   (println (str/join ", " (rest (re-find #"(\w+)\s+((\w+)\s+(\w+))\s+(\w+)\s+(\w+)" s)))))
+;; colourless, green ideas, green, ideas, sleep, furiously
+```
 
+`clojure.string/replace` はマッチした部分を指定した文字列に *全て* 置換した文字列を返します。
+`clojure.string/replace-first` はマッチした部分を指定した文字列に *1つだけ* 置換した文字列を返します。
+
+```clj
 (let [s "Goo morning world"]
   (println (str/replace s #"world" "Vietnam")))
+;; Goo morning Vietnam
 
 (let [s "a tonne of feathers or a tonne of bricks"]
-  (doseq [m (re-seq #"(\w+)" s)]
-    (println (str "'" (first m) "'")))
   (println (str/replace-first s #"[aeiou]" "r"))
   (println (str/replace-first (str/replace-first s #"[aeiou]" "r") #"[aeiou]" "r"))
   (println (str/replace s #"[aeiou]" "r")))
+;; r tonne of feathers or a tonne of bricks
+;; r trnne of feathers or a tonne of bricks
+;; r trnnr rf frrthrrs rr r trnnr rf brrcks
+```
 
-(println (re-find #"(?i)hello" "Hello world"))
+繰り返しになりますが、引数に渡した文字列は変更されません。
+
+`re-seq` は正規表現にマッチした部分をベクタのシーケンスとして返します。
+
+```clj
+(let [s "a tonne of feathers or a tonne of bricks"]
+  (doseq [m (re-seq #"(\w+)" s)]
+    (println (str "'" (first m) "'")))
+```
+
+`#""` で作られるのは `java.util.regex.Pattern` のオブジェクトです。  
+正規表現の記述ルールもこれに従うので、記述ルールについては  
+https://docs.oracle.com/javase/jp/8/docs/api/java/util/regex/Pattern.html  
+を参照のこと。
+
+例: `(?i)` で大文字/小文字を区別しないようにする。
+
+```clj
+(prn (re-find #"(?i)hello" "Hello world")) ; "Hello"
 ```
 
 ## ライブラリと名前空間
 
+Perlのモジュールとパッケージに相当します。
+
+Perlと同様、ライブラリと名前空間は別物です。
+
 ### ライブラリ
+
+ライブラリは `require` で読み込むことができるパスに配置された、  
+Clojureのソースコード(またはJavaのクラスファイル)です。
+
+「読み込むことができるパス」はJavaのクラスパスの影響を受けます。  
+上述の `clojure.bat` でカレントディレクトリ `.` をクラスパスに追加しているので、
+
+`(require 'demo.string-utils)` で読み込むことができるライブラリは  
+`./demo/string_utils.clj` に配置されたClojureソースコードです。
+
+`-` が `_` に変わっていることに注意。 だいたいの人がハマります。
 
 ```clj
 ;;; demo/string_utils.clj
@@ -709,13 +842,23 @@ Clojureの
   (str/replace word #"[aeiou]" "r"))
 ```
 
+ライブラリに書かれた関数が `require` することで評価できることを確認します。
+
 ```clj
 (require 'demo.string-utils)
 
-(println (zombify "i want brains"))
+(println (zombify "i want brains")) ; r wrnt brrrns
 ```
 
 ### 名前空間
+
+`ns` を使うと名前空間を切り替えることができます。  
+デフォルトの名前空間は `user` なので、いままで定義してきたユーザ定義関数はすべて  
+`user/関数名` という名前でした。
+
+Perlでは `main` でしたね。
+
+以下の例では、ライブラリ `food.subroutine` に異なる名前空間、同じ名前の関数を定義しています。
 
 ```clj
 ;;; food/subroutine.clj
@@ -731,10 +874,17 @@ Clojureの
 ```clj
 (require '[food.subroutine])
 
-(subroutine)
-(user/subroutine)
-(food.potatoes/subroutine)
+(subroutine)               ; universe
+(user/subroutine)          ; universe
+(food.potatoes/subroutine) ; kingedward
 ```
+`subroutine` が `user/subroutine` の略で、  
+`food.potatoes/subroutine` が別関数が呼ばれていることがわかります。
+
+実用的には、  
+ライブラリ名と名前空間を同じにしておくことで混乱なく再利用できる部品を作ることができます。
+
+上述したライブラリ `demo.string-utils` は以下のように書かれるべきでした。
 
 ```clj
 ;;; demo/string_utils.clj
@@ -752,33 +902,96 @@ Clojureの
 (println (demo.string-utils/zombify "i want brains"))
 ```
 
+`:as` で名前空間に別名を付けたり、
+
+```clj
+(require '[demo.string-utils :as dsu])
+
+(println (dsu/zombify "i want brains"))
+```
+
+`:refer` 特定の関数だけインポートしたりして便利に使えます。
+
+```clj
+(require '[demo.string-utils :refer [zombify]])
+
+(println (zombify "i want brains"))
+```
+
 ## マルチメソッドとヒエラルキー
 
-### 型宣言
- 
+マルチメソッドは、引数の型や状態によって呼ばれる関数の実装を切り替えることです。  
+Perlではパッケージに継承関係を持たせることでマルチメソッドを実現しています。
+
+Clojureは、 Perlのような型によるマルチメソッドと、  
+より汎用的な(しかしやや遅い)値によるマルチメソッドを両方備えています。
+
+### 型によるマルチメソッド
+
+Clojureで新しい型を作るには `defrecord` を使います。
+
+```clj
+(defrecord Koala [])
+```
+
+まず `defprotocol` で関数がメソッドであるという宣言を行ないます。
+
 ```clj
 (defprotocol Animal
   (can-eat [this food]))
+```
 
-(defrecord Koala []
-  Animal
+`extend-protocol` で特定の型のメソッドを実装します。
+
+```clj
+(extend-protocol Animal
+  Koala
   (can-eat [this food] (= food "eucalyptus")))
+```
 
+あとは関数のように評価するだけです。
+
+```clj
 (defn eat [animal & foods]
   (doseq [food foods]
     (println (str (if (can-eat animal food)
                 "Eating "
                 "Can't eat ")
               food))))
+```
 
-(let [animal (assoc (Koala.)
-               :legs 4
-               :color "blown")]
-  (println animal)
+定義した型のインスタンスを作るには `(型名.)` と書きます。
+
+```clj
+(let [animal (Koala.)]
   (println (eat animal "insects" "curry" "eucalyptus")))
+;; Can't eat insects
+;; Can't eat curry
+;; Eating eucalyptus
+```
+
+### 値によるマルチメソッド
+
+`defmulti` で指定した関数で評価された値が、  
+`defmethod` の第2引数にマッチする実装が呼ばれる、というシンプルな仕組みです。
+
+```clj
+(defmulti fizzbuzz (fn [n] [(zero? (mod n 3))
+                            (zero? (mod n 5))]))
+(defmethod fizzbuzz [true  true]  [n] "FizzBuzz")
+(defmethod fizzbuzz [true  false] [n] "Fizz")
+(defmethod fizzbuzz [false true]  [n] "Buzz")
+(defmethod fizzbuzz [false false] [n] n)
+
+(println (fizzbuzz 1))  ; 1
+(println (fizzbuzz 6))  ; Fizz
+(println (fizzbuzz 10)) ; Buzz
+(println (fizzbuzz 30)) ; FizzBuzz
 ```
 
 ## プライベート関数
+
+`defn-` を使って関数を定義すると、他の名前空間から読み込むことができなくなります。
 
 ```clj
 ;;; caterpillar.clj
@@ -794,16 +1007,39 @@ Clojureの
   (prn "bloop bloop"))
 ```
 
+評価しようとすると `IllegalStateException` を投げます。
+
 ```clj
 (require 'caterpillar)
 
-(caterpillar/crawl)
-(caterpillar/eat)
-
-(shutdown-agents)
+(caterpillar/crawl)  ; inch inch
+(caterpillar/eat)    ; chomp chomp
+(caterpillar/pupate) ; IllegalStateException
 ```
 
 ## その他注意
 
-- `println` の代わりに `prn` を使うとClojureが再度読み込める形式でデータ構造を出力します。これはPerlの `Data::Dumper`の挙動と似ています。
+- `println` の代わりに `clojure.pprint/pprint` を使うと読みやすい形式でデータ構造を出力します。これはPerlの `Data::Dumper`の挙動と似ています。
 - Clojureにはヒアドキュメント構文はありません
+
+# もっとClojure
+
+元ネタである「2時間半で学ぶPerl」の内用は押さえました。  
+ここまでで、出てこなかった機能を下に列挙しておきます。
+
+- グローバル変数
+- ダイナミック変数
+- 例外処理
+- マクロ
+- 遅延シーケンス
+- transient
+- transducer
+- ref と STM
+- agent - (`clojure.java.shell/sh` で使われている)
+- atom
+- reducer
+- クォート - `(require 'hoge.fuga)` の `'`
+- シンタックスクォート
+- コマンドラインツール
+
+これらの機能を使わずとも実用できることが分かっていただけたかと思います。
