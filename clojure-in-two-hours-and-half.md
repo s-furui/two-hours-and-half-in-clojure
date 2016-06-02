@@ -1058,21 +1058,27 @@ Clojureで新しい型を作るには `defrecord` を使います。
 # もっとClojure
 
 元ネタである「2時間半で学ぶPerl」の内容は押さえました。  
-ここまでで、出てこなかった機能を下に列挙しておきます。
+ここまでで、出てこなかった機能と標準ライブラリを下に列挙しておきます。
 
+- コマンドラインツール
+- REPL
+- クォート - `(require 'hoge.fuga)` の `'`
+- シンタックスクォート
+- 遅延シーケンス
 - グローバル変数
 - ダイナミック変数
 - 例外処理
+- Java連携 - (インスタンスメソッドコールだけ)
 - マクロ
-- 遅延シーケンス
 - transient
 - transducer
 - ref と STM
 - agent - (`clojure.java.shell/sh` で使われている)
 - atom
 - reducer
-- クォート - `(require 'hoge.fuga)` の `'`
-- シンタックスクォート
-- コマンドラインツール
+- ClojureScriptとClojureCLR
+- clojure.core.async で非同期プログラミング
+- clojure.core.logic で論理プログラミング
+- clojure.text で自動テスト
 
-これらの機能を使わずとも実用できることが分かっていただけたかと思います。
+これらを使わずとも実用できることが分かっていただけたかと思います。
