@@ -252,6 +252,10 @@
 (with-open [r (io/reader "text.txt" :encoding "JISAutoDetect")]
   (prn (line-seq r)))
 
+(with-open [w (io/writer "output.txt" :encoding "MS932")]
+  (binding [*out* w]
+    (println "hello,world")))
+
 (.exists (io/file "C:" "Windows"))
 (.isFile (io/file "C:" "Windows"))
 (.isDirectory (io/file "C:" "Windows"))
